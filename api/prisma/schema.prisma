@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model AuthUser {
+    uuid         String         @id @default(uuid())
+    email        String         @unique
+    username     String         @unique
+    password     String
+    role         String         @default("USER")
+    OrderSession OrderSession[]
+    UserOrder    UserOrder[]
+}
+
+model OrderSession {
+    uuid          String      @id @default(uuid())
+    created       DateTime    @default(now())
+    expire        DateTime
+    createdByUuid String
+    createdBy     AuthUser    @relation(fields: [createdByUuid], references: [uuid])
+    deliveryCost  Decimal
+    restaurant    String
+    vendor        String
+    isActive      Boolean     @default(true)
+    UserOrder     UserOrder[]
+}
+
+model UserOrder {
+    uuid             String       @id @default(uuid())
+    created          DateTime     @default(now())
+    userUuid         String
+    user             AuthUser     @relation(fields: [userUuid], references: [uuid])
+    orderSessionUuid String
+    orderSession     OrderSession @relation(fields: [orderSessionUuid], references: [uuid])
+    meal             String
+    condaments       String?
+    price            Decimal
+}

@@ -10,7 +10,7 @@ async function bootstrap() {
             resave: false,
             saveUninitialized: false,
         }),
-    )
+    );
     await app.listen(3000);
 }
 bootstrap();

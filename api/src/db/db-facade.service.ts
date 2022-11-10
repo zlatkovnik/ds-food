@@ -1,56 +1,40 @@
 import { Injectable } from '@nestjs/common';
-import { readFile, writeFile } from 'fs/promises';
-import { UserDTO } from 'src/models/auth.model';
-import { CreateOrderForm, OrderSession, UserOrder } from 'src/models/order.model';
+import { AuthUser, OrderSession, UserOrder } from '@prisma/client';
+import { PrismaService } from './prisma.service';
 
 @Injectable()
 export class DBFacadeService {
-    dbPath = 'db.json';
+    constructor(private prisma: PrismaService) { }
 
-    async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<UserDTO> {
-        const buffer = await readFile(this.dbPath);
-        const db = JSON.parse(buffer.toString());
-        return db.users.find(user => user.email === usernameOrEmail || user.username === usernameOrEmail);
+    async getUserByUsername(username: string) {
+        return this.prisma.authUser.findUnique({ where: { username: username } });
     }
 
-    async addNewUser(user: UserDTO) {
-        const buffer = await readFile(this.dbPath);
-        const db = JSON.parse(buffer.toString());
-        db.users.push(user);
-        writeFile(this.dbPath, JSON.stringify(db));
-        return user;
+    async getUserByEmail(email: string) {
+        return this.prisma.authUser.findUnique({ where: { email: email } });
+    }
+
+    async addNewUser(user: AuthUser) {
+        return this.prisma.authUser.create({ data: user });
     }
 
     async createOrderSession(orderSession: OrderSession) {
-        const buffer = await readFile(this.dbPath);
-        const db = JSON.parse(buffer.toString());
-        db.orderSessions.push(orderSession);
-        writeFile(this.dbPath, JSON.stringify(db));
-        return orderSession;
+        return this.prisma.orderSession.create({ data: orderSession });
     }
 
-    async getOrderSession(orderSessionUuid: string): Promise<OrderSession> {
-        const buffer = await readFile(this.dbPath);
-        const db = JSON.parse(buffer.toString());
-        return db.orderSessions.find(order => order.uuid === orderSessionUuid);
+    async getOrderSession(orderSessionUuid: string) {
+        return this.prisma.orderSession.findUnique({ where: { uuid: orderSessionUuid } });
     }
 
     async createUserOrder(userOrder: UserOrder) {
-        const buffer = await readFile(this.dbPath);
-        const db = JSON.parse(buffer.toString());
-        const orderSession = db.orderSessions.find(session => session.uuid = userOrder.sessionUuid);
-        orderSession.orders.push(userOrder);
-        writeFile(this.dbPath, JSON.stringify(db));
-        return userOrder;
+        return this.prisma.userOrder.create({ data: userOrder });
     }
 
-    async deleteOrder(orderSessionUuid: string, orderUuid: string) {
-        const buffer = await readFile(this.dbPath);
-        const db = JSON.parse(buffer.toString());
-        const orderSession = db.orderSessions.find(session => session.uuid = orderSessionUuid);
-        orderSession.orders = orderSession.orders.filter(order => order.uuid !== orderUuid);
-        writeFile(this.dbPath, JSON.stringify(db));
-        return;
+    async getUserOrder(userOrder: string) {
+        return this.prisma.userOrder.findUnique({ where: { uuid: userOrder } });
     }
 
+    async deleteUserOrder(userOrderUuid: string) {
+        return this.prisma.userOrder.delete({ where: { uuid: userOrderUuid } });
+    }
 }

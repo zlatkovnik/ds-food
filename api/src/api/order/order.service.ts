@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { AuthUser, OrderSession, Prisma, UserOrder } from '@prisma/client';
 import { DBFacadeService } from 'src/db/db-facade.service';
-import { AuthUser } from 'src/models/auth.model';
-import { CreateOrderForm, CreateOrderSessionForm, OrderSession, UserOrder } from 'src/models/order.model';
+import { CreateOrderForm, CreateOrderSessionForm } from 'src/models/order.model';
 import { v4 as uuidv4, v6 as uuidv6 } from 'uuid';
 
 @Injectable()
@@ -10,41 +10,36 @@ export class OrderService {
 
     async createOrderSession(createOrderSessionForm: CreateOrderSessionForm, user: AuthUser) {
         const orderSession: OrderSession = {
-            ...createOrderSessionForm, created: Date.now(), createdBy: user.uuid, uuid: uuidv4(),
-            isActive: true, orders: []
+            ...createOrderSessionForm, created: new Date(), createdByUuid: user.uuid, uuid: uuidv4(),
+            isActive: true, deliveryCost: new Prisma.Decimal(createOrderSessionForm.deliveryCost)
         }
         const createdOrderSession = await this.dbFacadeService.createOrderSession(orderSession);
         return createdOrderSession;
     }
 
-    async createOrder(createOrderForm: CreateOrderForm, user: AuthUser) {
-        const orderSession = await this.dbFacadeService.getOrderSession(createOrderForm.sessionUuid);
+    async createUserOrder(createOrderForm: CreateOrderForm, user: AuthUser) {
+        const orderSession = await this.dbFacadeService.getOrderSession(createOrderForm.orderSessionUuid);
         if (!orderSession) {
             throw 'Order session not found.';
         }
 
         const userOrder: UserOrder = {
-            ...createOrderForm, created: Date.now(), userUuid: user.uuid, uuid: uuidv4()
+            ...createOrderForm, created: new Date(), userUuid: user.uuid, uuid: uuidv4(),
+            price: new Prisma.Decimal(createOrderForm.price)
         }
         const createdUserOrder = await this.dbFacadeService.createUserOrder(userOrder);
         return createdUserOrder;
     }
 
-    async deleteOrder(orderSessionUuid: string, userUuid: string) {
-        const orderSession = await this.dbFacadeService.getOrderSession(orderSessionUuid);
-        if (!orderSession) {
-            throw 'Order session not found.';
-        }
-
-        const order = orderSession.orders.find(order => order.userUuid === userUuid);
-        if (!order) {
-            throw 'Order for user not found.';
-        }
-
-        await this.dbFacadeService.deleteOrder(orderSessionUuid, order.uuid);
+    async deleteOrder(userOrderUuid: string) {
+        await this.dbFacadeService.deleteUserOrder(userOrderUuid);
     }
 
     getOrderSession(orderSessionUuid: string) {
         return this.dbFacadeService.getOrderSession(orderSessionUuid);
+    }
+
+    getUserOrder(userOrderUuid: string) {
+        return this.dbFacadeService.getUserOrder(userOrderUuid);
     }
 }

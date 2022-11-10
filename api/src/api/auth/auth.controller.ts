@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpStatus, Post, Res, Session } from '@nestjs/common';
+import { AuthUser } from '@prisma/client';
 import { Response } from 'express';
-import { AuthCookie, LoginForm, RegistrationForm, AuthUser } from '../../models/auth.model';
+import { AuthCookie, LoginForm, RegistrationForm } from '../../models/auth.model';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
